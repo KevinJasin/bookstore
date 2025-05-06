@@ -1,6 +1,6 @@
 <?php
-$host = '';
-$db   = '';
-$user = '';
+$host = 'localhost';
+$db   = 'bookstore';
+$user = 'root';
 $pass = '';
-$charset = '';
+$charset = 'utf8mb4';

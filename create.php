@@ -6,13 +6,21 @@ $stmt = $pdo->query('SELECT * FROM authors');
 
 if (isset($_POST["submit"])) {
     $title = $_POST["title"];
-    $release_date = $_POST["release_date"];
     $price = $_POST["price"];
     $type = $_POST["type"];
+    $language = $_POST["language"];
+    $pages = $_POST["pages"];
+
+    // ✅ Extract only the year for YEAR column
+    if (!empty($_POST["release_date"]) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $_POST["release_date"])) {
+        $release_date = date('Y', strtotime($_POST["release_date"]));
+    } else {
+        die("❌ Invalid release date. Please use YYYY-MM-DD format.");
+    }
 
     $author_id = $_POST["author_id"];
 
-    if ($author_id == "new") {
+    if ($author_id === "new") {
         $author_first_name = $_POST["author_first_name"];
         $author_last_name = $_POST["author_last_name"];
 
@@ -22,8 +30,16 @@ if (isset($_POST["submit"])) {
         $author_id = $pdo->lastInsertId();
     }
 
-    $stmt = $pdo->prepare('INSERT INTO books (title, release_date, price, type) VALUES (:title, :release_date, :price, :type)');
-    $stmt->execute(['title' => $title, 'release_date' => $release_date, 'price' => $price, 'type' => $type]);
+    $stmt = $pdo->prepare('INSERT INTO books (title, release_date, price, type, language, pages) 
+                           VALUES (:title, :release_date, :price, :type, :language, :pages)');
+    $stmt->execute([
+        'title' => $title,
+        'release_date' => $release_date,
+        'price' => $price,
+        'type' => $type,
+        'language' => $language,
+        'pages' => $pages
+    ]);
 
     $book_id = $pdo->lastInsertId();
 
@@ -33,8 +49,8 @@ if (isset($_POST["submit"])) {
     header("Location: index.php");
     exit();
 }
-
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -51,7 +67,7 @@ if (isset($_POST["submit"])) {
         <input type="text" name="title"><br><br>
 
         <label for="release_date">Release Date:</label><br>
-        <input type="date" name="release_date"><br><br>
+        <input type="date" name="release_date" required><br><br>
 
         <label for="price">Price:</label><br>
         <input type="number" name="price" step="0.01"><br><br>
@@ -63,16 +79,22 @@ if (isset($_POST["submit"])) {
             <option value="new">New</option>
         </select><br><br>
 
+        <label for="language">Language:</label><br>
+        <select name="language">
+            <option value="English">English</option>
+            <option value="Estonian">Estonian</option>
+            <option value="Other">Other</option>
+        </select><br><br>
+
+        <label for="pages">Pages:</label><br>
+<input type="number" name="pages"><br><br>
+
         <label for="author_id">Author:</label><br>
         <select name="author_id">
             <option value="new">Create New Author</option>
-<?php
-while ($row = $stmt->fetch()){
-?>
+<?php while ($row = $stmt->fetch()): ?>
             <option value="<?= $row["id"]; ?>"><?= $row["first_name"]; ?> <?= $row["last_name"]; ?></option>
-<?php
-}
-?>
+<?php endwhile; ?>
         </select><br><br>
 
         <div id="new-author-fields" style="display: none;">
@@ -93,11 +115,7 @@ while ($row = $stmt->fetch()){
         const newAuthorFields = document.querySelector('#new-author-fields');
 
         authorSelect.addEventListener('change', () => {
-            if (authorSelect.value === 'new') {
-                newAuthorFields.style.display = 'block';
-            } else {
-                newAuthorFields.style.display = 'none';
-            }
+            newAuthorFields.style.display = authorSelect.value === 'new' ? 'block' : 'none';
         });
     </script>
 </body>
